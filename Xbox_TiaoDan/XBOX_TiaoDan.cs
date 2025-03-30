@@ -1,6 +1,9 @@
-﻿using System;
+﻿// Power by ChatGPT o3-mini-high
+
+using System;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Drawing;
 
 namespace Xbox_TiaoDan
 {
@@ -45,42 +48,83 @@ namespace Xbox_TiaoDan
             public short sThumbRY;
         }
 
+        // 用于语言切换
+        private string currentLanguage = "中文"; // 默认中文
+        private ComboBox comboBoxLanguage;
+
+        private Label labelSelectLanguage;   // 新增：语言选择提示标签
         private Label labelControllerStatus;
         private Label labelVibrationStatus;
         private Timer timer;
         private Button btnVibrate;
-        private TrackBar trackBarIntensity; // 用于控制震动力度的滑动条
-        private bool isVibrating = false;    // 当前震动状态
+        private TrackBar trackBarIntensity;  // 用于控制震动力度的滑动条
+        private bool isVibrating = false;     // 当前震动状态
 
         public XBOX_TiaoDan()
         {
             InitializeComponent();
+
+            // 设置窗体启动居中，并设定默认大小
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.ClientSize = new Size(400, 350);
+
+            // 创建 TableLayoutPanel，所有控件剧中排列
+            TableLayoutPanel tableLayoutPanel = new TableLayoutPanel();
+            tableLayoutPanel.Dock = DockStyle.Fill;
+            tableLayoutPanel.ColumnCount = 1;
+            tableLayoutPanel.AutoSize = true;
+            tableLayoutPanel.AutoSizeMode = AutoSizeMode.GrowAndShrink;
+            tableLayoutPanel.Padding = new Padding(0, 20, 0, 20);
+            tableLayoutPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            // 定义6行布局：标签、下拉框、按钮、连接状态、震动状态、滑动条
+            tableLayoutPanel.RowCount = 6;
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 选择语言提示
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 语言选择 ComboBox
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 震动按钮
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 手柄连接状态
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 震动状态及程度
+            tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 震动力度滑动条
+
+            // 新增：创建语言选择提示 Label
+            labelSelectLanguage = new Label();
+            labelSelectLanguage.Text = "选择语言 / Select Language";
+            labelSelectLanguage.AutoSize = true;
+            labelSelectLanguage.TextAlign = ContentAlignment.MiddleCenter;
+            labelSelectLanguage.Anchor = AnchorStyles.None;
+            tableLayoutPanel.Controls.Add(labelSelectLanguage, 0, 0);
+
+            // 创建语言选择 ComboBox
+            comboBoxLanguage = new ComboBox();
+            comboBoxLanguage.Items.Add("中文");
+            comboBoxLanguage.Items.Add("English");
+            comboBoxLanguage.SelectedIndex = 0; // 默认中文
+            comboBoxLanguage.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxLanguage.SelectedIndexChanged += ComboBoxLanguage_SelectedIndexChanged;
+            comboBoxLanguage.Anchor = AnchorStyles.None;
+            tableLayoutPanel.Controls.Add(comboBoxLanguage, 0, 1);
 
             // 创建开关震动按钮
             btnVibrate = new Button();
             btnVibrate.Text = "开启震动";
             btnVibrate.Width = 120;
             btnVibrate.Height = 40;
-            btnVibrate.Top = 50;
-            btnVibrate.Left = 50;
             btnVibrate.Click += BtnVibrate_Click;
-            this.Controls.Add(btnVibrate);
+            btnVibrate.Anchor = AnchorStyles.None;
+            tableLayoutPanel.Controls.Add(btnVibrate, 0, 2);
 
             // 创建用于显示手柄连接状态的 Label
             labelControllerStatus = new Label();
             labelControllerStatus.Text = "检测中...";
             labelControllerStatus.AutoSize = true;
-            labelControllerStatus.Top = btnVibrate.Bottom + 20;
-            labelControllerStatus.Left = btnVibrate.Left;
-            this.Controls.Add(labelControllerStatus);
+            labelControllerStatus.Anchor = AnchorStyles.None;
+            tableLayoutPanel.Controls.Add(labelControllerStatus, 0, 3);
 
             // 创建用于显示震动状态和震动程度的 Label
             labelVibrationStatus = new Label();
             labelVibrationStatus.Text = "震动状态: 关闭, 震动程度: 0%";
             labelVibrationStatus.AutoSize = true;
-            labelVibrationStatus.Top = labelControllerStatus.Bottom + 20;
-            labelVibrationStatus.Left = btnVibrate.Left;
-            this.Controls.Add(labelVibrationStatus);
+            labelVibrationStatus.Anchor = AnchorStyles.None;
+            tableLayoutPanel.Controls.Add(labelVibrationStatus, 0, 4);
 
             // 创建 TrackBar 控件，用于控制震动力度（百分比）
             trackBarIntensity = new TrackBar();
@@ -90,17 +134,45 @@ namespace Xbox_TiaoDan
             trackBarIntensity.TickFrequency = 10;
             trackBarIntensity.SmallChange = 1;
             trackBarIntensity.LargeChange = 10;
-            trackBarIntensity.Top = labelVibrationStatus.Bottom + 20;
-            trackBarIntensity.Left = btnVibrate.Left;
             trackBarIntensity.Width = 200;
+            trackBarIntensity.Anchor = AnchorStyles.None;
             trackBarIntensity.Scroll += TrackBarIntensity_Scroll;
-            this.Controls.Add(trackBarIntensity);
+            tableLayoutPanel.Controls.Add(trackBarIntensity, 0, 5);
+
+            // 将 TableLayoutPanel 添加到窗体
+            this.Controls.Add(tableLayoutPanel);
 
             // 创建 Timer 定时器，每秒检测一次手柄连接状态
             timer = new Timer();
             timer.Interval = 1000; // 1秒
             timer.Tick += Timer_Tick;
             timer.Start();
+        }
+
+        // ComboBox 语言切换事件
+        private void ComboBoxLanguage_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            currentLanguage = comboBoxLanguage.SelectedItem.ToString();
+            UpdateUILanguage();
+        }
+
+        // 根据 currentLanguage 更新界面所有文本
+        private void UpdateUILanguage()
+        {
+            if (currentLanguage == "English")
+            {
+                btnVibrate.Text = isVibrating ? "Disable Vibration" : "Enable Vibration";
+                labelVibrationStatus.Text = isVibrating ?
+                    $"Vibration: On, Intensity: {trackBarIntensity.Value}%" :
+                    $"Vibration: Off, Intensity: {trackBarIntensity.Value}%";
+            }
+            else
+            {
+                btnVibrate.Text = isVibrating ? "关闭震动" : "开启震动";
+                labelVibrationStatus.Text = isVibrating ?
+                    $"震动状态: 开启, 震动程度: {trackBarIntensity.Value}%" :
+                    $"震动状态: 关闭, 震动程度: {trackBarIntensity.Value}%";
+            }
         }
 
         // 按钮点击事件：切换震动状态
@@ -117,8 +189,6 @@ namespace Xbox_TiaoDan
                 vibration.wRightMotorSpeed = intensity;
                 XInputSetState(0, ref vibration);
                 isVibrating = true;
-                btnVibrate.Text = "关闭震动";
-                labelVibrationStatus.Text = $"震动状态: 开启, 震动程度: {intensityPercentage}%";
             }
             else
             {
@@ -126,16 +196,14 @@ namespace Xbox_TiaoDan
                 vibration.wRightMotorSpeed = 0;
                 XInputSetState(0, ref vibration);
                 isVibrating = false;
-                btnVibrate.Text = "开启震动";
-                labelVibrationStatus.Text = $"震动状态: 关闭, 震动程度: {trackBarIntensity.Value}%";
             }
+            UpdateUILanguage();
         }
 
         // TrackBar 滑动事件：实时调整震动力度
         private void TrackBarIntensity_Scroll(object sender, EventArgs e)
         {
             int intensityPercentage = trackBarIntensity.Value;
-            labelVibrationStatus.Text = $"震动状态: {(isVibrating ? "开启" : "关闭")}, 震动程度: {intensityPercentage}%";
             if (isVibrating)
             {
                 // 根据滑动条值计算震动力度并更新手柄状态
@@ -147,6 +215,7 @@ namespace Xbox_TiaoDan
                 };
                 XInputSetState(0, ref vibration);
             }
+            UpdateUILanguage();
         }
 
         // Timer Tick 事件：检测手柄是否连接
@@ -154,7 +223,10 @@ namespace Xbox_TiaoDan
         {
             XInputState state;
             uint result = XInputGetState(0, out state);
-            labelControllerStatus.Text = result == 0 ? "手柄已连接" : "手柄未连接";
+            if (currentLanguage == "English")
+                labelControllerStatus.Text = result == 0 ? "Controller connected" : "Controller not connected";
+            else
+                labelControllerStatus.Text = result == 0 ? "手柄已连接" : "手柄未连接";
         }
 
         [STAThread]
@@ -166,7 +238,6 @@ namespace Xbox_TiaoDan
 
         private void Form1_Load(object sender, EventArgs e)
         {
-
         }
     }
 }
