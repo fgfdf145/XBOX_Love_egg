@@ -51,14 +51,18 @@ namespace Xbox_TiaoDan
         // 用于语言切换
         private string currentLanguage = "中文"; // 默认中文
         private ComboBox comboBoxLanguage;
+        private Label labelSelectLanguage;   // 语言选择提示标签
 
-        private Label labelSelectLanguage;   // 新增：语言选择提示标签
         private Label labelControllerStatus;
         private Label labelVibrationStatus;
         private Timer timer;
         private Button btnVibrate;
         private TrackBar trackBarIntensity;  // 用于控制震动力度的滑动条
         private bool isVibrating = false;     // 当前震动状态
+
+        // 新增：键盘按键连续处理
+        private Timer keyRepeatTimer;
+        private Keys? activeArrowKey = null; // 当前按下的方向键
 
         public XBOX_TiaoDan()
         {
@@ -67,6 +71,15 @@ namespace Xbox_TiaoDan
             // 设置窗体启动居中，并设定默认大小
             this.StartPosition = FormStartPosition.CenterScreen;
             this.ClientSize = new Size(400, 350);
+            // 使窗体能够接收键盘事件
+            this.KeyPreview = true;
+            this.KeyDown += XBOX_TiaoDan_KeyDown;
+            this.KeyUp += XBOX_TiaoDan_KeyUp;
+
+            // 初始化键盘重复定时器
+            keyRepeatTimer = new Timer();
+            keyRepeatTimer.Interval = 100; // 100毫秒
+            keyRepeatTimer.Tick += KeyRepeatTimer_Tick;
 
             // 创建 TableLayoutPanel，所有控件剧中排列
             TableLayoutPanel tableLayoutPanel = new TableLayoutPanel();
@@ -85,7 +98,7 @@ namespace Xbox_TiaoDan
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 震动状态及程度
             tableLayoutPanel.RowStyles.Add(new RowStyle(SizeType.AutoSize)); // 震动力度滑动条
 
-            // 新增：创建语言选择提示 Label
+            // 创建语言选择提示 Label
             labelSelectLanguage = new Label();
             labelSelectLanguage.Text = "选择语言 / Select Language";
             labelSelectLanguage.AutoSize = true;
@@ -149,6 +162,72 @@ namespace Xbox_TiaoDan
             timer.Start();
         }
 
+        // 辅助方法：调整震动力度，并更新界面与手柄状态
+        private void AdjustIntensity(int delta)
+        {
+            int newValue = trackBarIntensity.Value + delta;
+            if (newValue > trackBarIntensity.Maximum)
+                newValue = trackBarIntensity.Maximum;
+            if (newValue < trackBarIntensity.Minimum)
+                newValue = trackBarIntensity.Minimum;
+            trackBarIntensity.Value = newValue;
+
+            if (isVibrating)
+            {
+                ushort intensity = (ushort)(newValue / 100.0 * 65535);
+                XInputVibration vibration = new XInputVibration
+                {
+                    wLeftMotorSpeed = intensity,
+                    wRightMotorSpeed = intensity
+                };
+                XInputSetState(0, ref vibration);
+            }
+            UpdateUILanguage();
+        }
+
+        // 键盘按下事件：检测左右方向键
+        private void XBOX_TiaoDan_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode == Keys.Left || e.KeyCode == Keys.Right)
+            {
+                // 如果当前没有按键，则处理此次按下
+                if (activeArrowKey == null)
+                {
+                    activeArrowKey = e.KeyCode;
+                    if (e.KeyCode == Keys.Left)
+                        AdjustIntensity(-5);
+                    else if (e.KeyCode == Keys.Right)
+                        AdjustIntensity(5);
+                    keyRepeatTimer.Start();
+                }
+                e.Handled = true;
+            }
+        }
+
+        // 键盘松开事件：停止连续调整
+        private void XBOX_TiaoDan_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (activeArrowKey != null && e.KeyCode == activeArrowKey)
+            {
+                activeArrowKey = null;
+                keyRepeatTimer.Stop();
+                e.Handled = true;
+            }
+        }
+
+        // 键盘重复定时器 Tick 事件：长按时连续调整震动力度
+        private void KeyRepeatTimer_Tick(object sender, EventArgs e)
+        {
+            if (activeArrowKey == Keys.Left)
+            {
+                AdjustIntensity(-5);
+            }
+            else if (activeArrowKey == Keys.Right)
+            {
+                AdjustIntensity(5);
+            }
+        }
+
         // ComboBox 语言切换事件
         private void ComboBoxLanguage_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -183,7 +262,6 @@ namespace Xbox_TiaoDan
             if (!isVibrating)
             {
                 int intensityPercentage = trackBarIntensity.Value;
-                // 根据百分比计算震动力度（0～65535）
                 ushort intensity = (ushort)(intensityPercentage / 100.0 * 65535);
                 vibration.wLeftMotorSpeed = intensity;
                 vibration.wRightMotorSpeed = intensity;
@@ -206,7 +284,6 @@ namespace Xbox_TiaoDan
             int intensityPercentage = trackBarIntensity.Value;
             if (isVibrating)
             {
-                // 根据滑动条值计算震动力度并更新手柄状态
                 ushort intensity = (ushort)(intensityPercentage / 100.0 * 65535);
                 XInputVibration vibration = new XInputVibration
                 {
