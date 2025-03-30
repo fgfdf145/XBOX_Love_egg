@@ -64,6 +64,9 @@ namespace Xbox_TiaoDan
         private Timer keyRepeatTimer;
         private Keys? activeArrowKey = null; // 当前按下的方向键
 
+        // 新增：手柄输入轮询定时器
+        private Timer gamepadInputTimer;
+
         public XBOX_TiaoDan()
         {
             InitializeComponent();
@@ -80,6 +83,12 @@ namespace Xbox_TiaoDan
             keyRepeatTimer = new Timer();
             keyRepeatTimer.Interval = 100; // 100毫秒
             keyRepeatTimer.Tick += KeyRepeatTimer_Tick;
+
+            // 初始化手柄输入定时器
+            gamepadInputTimer = new Timer();
+            gamepadInputTimer.Interval = 100; // 每100毫秒检测一次
+            gamepadInputTimer.Tick += GamepadInputTimer_Tick;
+            gamepadInputTimer.Start();
 
             // 创建 TableLayoutPanel，所有控件剧中排列
             TableLayoutPanel tableLayoutPanel = new TableLayoutPanel();
@@ -225,6 +234,31 @@ namespace Xbox_TiaoDan
             else if (activeArrowKey == Keys.Right)
             {
                 AdjustIntensity(5);
+            }
+        }
+
+        // 新增：手柄输入轮询定时器 Tick 事件
+        private void GamepadInputTimer_Tick(object sender, EventArgs e)
+        {
+            XInputState state;
+            uint result = XInputGetState(0, out state);
+            if (result == 0)
+            {
+                // 检测 D-Pad 左（0x0004）和右（0x0008）的按键状态
+                bool dpadLeft = (state.Gamepad.wButtons & 0x0004) != 0;
+                bool dpadRight = (state.Gamepad.wButtons & 0x0008) != 0;
+                // 检测扳机键，设定一个阈值（例如大于30认为按下）
+                bool leftTrigger = state.Gamepad.bLeftTrigger > 30;
+                bool rightTrigger = state.Gamepad.bRightTrigger > 30;
+
+                if (dpadLeft || leftTrigger)
+                {
+                    AdjustIntensity(-5);
+                }
+                if (dpadRight || rightTrigger)
+                {
+                    AdjustIntensity(5);
+                }
             }
         }
 
