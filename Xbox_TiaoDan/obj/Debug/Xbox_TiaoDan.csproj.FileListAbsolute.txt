@@ -1,0 +1,10 @@
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\bin\Debug\Xbox_TiaoDan.exe.config
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\bin\Debug\Xbox_TiaoDan.exe
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\bin\Debug\Xbox_TiaoDan.pdb
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.csproj.AssemblyReference.cache
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.XBOX_TiaoDan.resources
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.Properties.Resources.resources
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.csproj.GenerateResource.cache
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.csproj.CoreCompileInputs.cache
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.exe
+X:\Project\Xbox_TiaoDan\Xbox_TiaoDan\Xbox_TiaoDan\obj\Debug\Xbox_TiaoDan.pdb
